@@ -1,0 +1,7 @@
+[package]
+name = "minijinja-exploration"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+minijinja = { version = "2.0.3", features = ["loader", "json", "urlencode", "preserve_order", "unstable_machinery_serde"] }

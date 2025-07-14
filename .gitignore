@@ -1,0 +1,38 @@
+# Compiled files and binaries
+/target/
+target/
+/target
+
+# Remove Cargo.lock for libraries, but keep it for binary projects
+# Uncomment the following line if this is a library project
+# Cargo.lock
+
+# Editor backup files
+*.swp
+*.swo
+*.bak
+*.tmp
+*~
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Environment configuration local files
+.env
+.local
+
+# Rust specific tools generated directories and files
+**/*.rs.bk
+
+# User-specific stuff:
+**/*.user
+**/*.sublime-project
+**/*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.jso
