@@ -1,7 +1,6 @@
-use minijinja::State;
-use minijinja::value::{Enumerator, Object, Value};
+use minijinja::value::{Enumerator, Kwargs, Object, Rest, Value, from_args};
 use minijinja::{Environment, context};
-use std::fmt::format;
+use minijinja::{Error, State};
 use std::io::stdout;
 use std::{collections::HashSet, sync::Arc};
 
@@ -182,6 +181,71 @@ fn test_custom_filters_example1_slugify() {
     );
 }
 
+// Keyword arguments
+fn modify(mut values: Vec<Value>, options: Kwargs) -> Result<Vec<Value>, minijinja::Error> {
+    // Get pulls a parameter of any type. Same as from_args.
+    if let Some(true) = options.get("reverse")? {
+        values.reverse();
+    }
+    if let Some(limit) = options.get("limit")? {
+        values.truncate(limit);
+    }
+    // Extra unused keyword arguments will create an error
+    options.assert_all_used()?;
+    Ok(values)
+}
+
+fn mathematical_fold(in_args: Rest<Value>) -> Result<Value, Error> {
+    let (args, kwargs) = from_args::<(&[Value], Kwargs)>(&in_args)?;
+    let mut accum : i64= 1;
+    if let Some("mul") = kwargs.get("op")? {
+        
+        for val in args {
+            accum *= val.as_i64().unwrap();
+        }
+    }
+    if let Some("add") = kwargs.get("op")? {
+        accum = 0;
+        for val in args {
+            accum += val.as_i64().unwrap();
+        }
+    }
+    Ok(Value::from(accum))
+}
+
+fn test_kwarg_handling() {
+    let mut env = Environment::new();
+    env.add_function("modify", modify);
+    env.add_template("mod_vec", "{{ modify(input_vec, limit=4, reverse=true) }}")
+        .unwrap();
+    let tmpl = env.get_template("mod_vec").unwrap();
+    let my_input_vec = vec![1, 2, 4, 5, 6, 7, 8, 9];
+    println!(
+        "{}",
+        tmpl.render(context! (input_vec => my_input_vec)).unwrap()
+    );
+
+    // How to create a Kwarg object from scratch
+    let kwargs_from_scratch =
+        Kwargs::from_iter([("foo", Value::from(true)), ("bar", Value::from(42))]);
+    let value_from_kwargs = Value::from(kwargs_from_scratch);
+    assert!(value_from_kwargs.is_kwargs());
+
+    // How to use Rest to handle variadic parameters
+    env.add_function("mathematical_fold", mathematical_fold);
+    env.add_template("fold_mul", "{{ mathematical_fold(1,2,3,4, op = mul) }}").unwrap();
+    let tmpl_mul = env.get_template("fold_mul").unwrap();
+    println!(
+        "{}",
+        tmpl_mul.render(context! (mul => "mul")).unwrap()
+    );
+    env.add_template("fold_add", "{{ mathematical_fold(1,2,3,4, op = add) }}").unwrap();
+    let tmpl_add = env.get_template("fold_add").unwrap();
+    println!(
+        "{}",
+        tmpl_add.render(context! (add => "add")).unwrap()
+    );
+}
 
 fn main() {
     test_template_usage();
@@ -196,4 +260,5 @@ fn main() {
     test_discard_output_and_return_internal_state();
     test_return_undeclared_variables();
     test_custom_filters_example1_slugify();
+    test_kwarg_handling();
 }
